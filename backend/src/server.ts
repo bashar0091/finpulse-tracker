@@ -83,6 +83,36 @@ app.get("/api/transactions", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * @route   POST /api/users
+ * @desc    Create a new user record for testing relational data integrity
+ * @access  Public
+ */
+app.post("/api/users", async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      res.status(400).json({ error: "Email and password are required" });
+      return;
+    }
+
+    const user = await prisma.user.create({
+      data: {
+        email,
+        password, // In production, this must be hashed using bcrypt/argon2
+      },
+    });
+
+    res.status(201).json({
+      success: true,
+      data: user,
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || "Internal Server Error during user creation" });
+  }
+});
+
 // Start listening configuration
 app.listen(PORT, () => {
   console.log(`[server]: Server is securely running on port ${PORT}`);
