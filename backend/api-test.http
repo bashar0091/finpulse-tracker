@@ -1,0 +1,29 @@
+### 1. Test Base Health Endpoint
+GET http://localhost:5000/api/health
+
+###
+### 2. Create a Real Test User First (Run this first!)
+POST http://localhost:5000/api/users
+Content-Type: application/json
+
+{
+  "email": "awal.bashar@example.com",
+  "password": "securepassword123"
+}
+
+###
+### 3. Create a New Transaction Entry (Replace userId with the ID generated from step 2)
+POST http://localhost:5000/api/transactions
+Content-Type: application/json
+
+{
+  "type": "INCOME",
+  "amount": 42200.00,
+  "category": "Salary",
+  "description": "Initial project milestone release payout",
+  "userId": "a1144b30-2b0e-4acb-83b8-f8ab09b6e921"
+}
+
+###
+### 4. Fetch All Transactions Logs
+GET http://localhost:5000/api/transactions
