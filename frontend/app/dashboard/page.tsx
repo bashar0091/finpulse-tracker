@@ -1,8 +1,11 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Navbar from "../components/Navbar";
 import AnalyticsCard from "../components/AnalyticsCard";
 import TransactionForm from "../components/TransactionForm";
 
-// Type definitions for transaction objects matching the database schema
 interface Transaction {
   id: string;
   type: "INCOME" | "EXPENSE" | string;
@@ -12,28 +15,77 @@ interface Transaction {
   date: string;
 }
 
-// Server-side function to fetch real-time logs from the Node.js Express server
-async function getTransactions(): Promise<Transaction[]> {
-  try {
-    // Explicitly fetching from backend server instance
-    const res = await fetch("http://localhost:5000/api/transactions", {
-      cache: "no-store", // Ensures fresh data validation on each server-side render pipeline
-    });
-    
-    if (!res.ok) throw new Error("Failed to fetch analytics payload");
-    
-    const jsonWrapper = await res.json();
-    return jsonWrapper.data || [];
-  } catch (error) {
-    console.error("[frontend-fetch-error]:", error);
-    return [];
+export default function Dashboard() {
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [userEmail, setUserEmail] = useState("User");
+  const router = useRouter();
+
+  useEffect(() => {
+    // Access browser safe boundaries securely
+    if (typeof window === "undefined") return;
+
+    const token = localStorage.getItem("token");
+    const email = localStorage.getItem("userEmail");
+
+    // 1. Safe Route Guard Redirection via Next.js Router
+    if (!token) {
+      router.replace("/login");
+      return;
+    }
+
+    if (email) {
+      setUserEmail(email.split("@")[0]);
+    }
+
+    // 2. Fetch User Logs from Active Dynamic Wi-Fi Network Host
+    const fetchTransactions = async () => {
+      const backendHost = window.location.hostname || "localhost";
+      const targetUrl = `http://${backendHost}:5000/api/transactions`;
+
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+        const res = await fetch(targetUrl, {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (res.ok) {
+          const jsonWrapper = await res.json();
+          setTransactions(jsonWrapper.data || []);
+        } else {
+          localStorage.clear();
+          router.replace("/login");
+        }
+      } catch (error) {
+        console.error("[dashboard-fetch-error]:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTransactions();
+  }, [router]);
+
+  // 3. Centralized Loading UI Block
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#fafafa] flex items-center justify-center font-sans text-black">
+        <h2 className="text-xl font-black uppercase tracking-widest animate-pulse">
+          Decrypting Ledger...
+        </h2>
+      </div>
+    );
   }
-}
 
-export default async function Dashboard() {
-  const transactions = await getTransactions();
-
-  // Dynamic calculations processing data metrics smoothly
+  // 4. Financial Metric Evaluators
   const totalIncome = transactions
     .filter((t) => t.type === "INCOME")
     .reduce((sum, t) => sum + t.amount, 0);
@@ -46,11 +98,9 @@ export default async function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[#fafafa] text-black p-6 font-sans">
-      
-      {/* Top Navigation Component */}
-      <Navbar username="Awal Bashar" />
+      <Navbar username={userEmail} />
 
-      {/* Dynamic Analytics Grid Section */}
+      {/* Financial Analytics Grid Architecture */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <AnalyticsCard 
           title="Total Balance" 
@@ -68,22 +118,22 @@ export default async function Dashboard() {
         />
       </div>
 
-      {/* 2-Column Responsive Layout Grid for Form and Tables */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Left Side: Input Form Component */}
+        {/* Core Control Block */}
         <div className="lg:col-span-1">
           <TransactionForm />
         </div>
 
-        {/* Right Side: Real Transactions Logs Table Interfaced directly with PostgreSQL */}
+        {/* Data Records Rendering Template */}
         <div className="lg:col-span-2 border-4 border-black bg-white p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
           <h3 className="text-lg font-black uppercase tracking-wide mb-4">
             Recent Transactions Logs
           </h3>
           
           {transactions.length === 0 ? (
-            <p className="text-zinc-500 font-medium italic">No recent transactions logs fetched from the server pipeline.</p>
+            <p className="text-zinc-500 font-medium italic">
+              No secure records bound to this account identity found.
+            </p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
@@ -113,9 +163,7 @@ export default async function Dashboard() {
             </div>
           )}
         </div>
-
       </div>
-
     </div>
   );
 }
