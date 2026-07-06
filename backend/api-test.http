@@ -27,3 +27,18 @@ Content-Type: application/json
 ###
 ### 4. Fetch All Transactions Logs
 GET http://localhost:5000/api/transactions
+
+
+###
+### 5. Test User Login Endpoint with Hashed Verification
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "awal.bashar@example.com",
+  "password": "securepassword123"
+}
+
+### Fetch Secure Transactions Logs (Must include Token!)
+GET http://localhost:5000/api/transactions
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1YTdiMzYxOS02ZjQwLTQ0MjUtYjFkOC04ODgyZTRiZTJhZmIiLCJlbWFpbCI6ImF3YWwuYmFzaGFyQGV4YW1wbGUuY29tIiwiaWF0IjoxNzgzMzIxNDM4LCJleHAiOjE3ODM5MjYyMzh9.rndPKJIV5qB1Ro3qnZpvXfplMD5QZYhWvtMnhngVvOk
