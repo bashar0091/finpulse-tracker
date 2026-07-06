@@ -2,6 +2,9 @@ import express, { Request, Response } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import prisma from "./db";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import { authenticateToken, AuthenticatedRequest } from "./auth";
 
 // Load environment variables
 dotenv.config();
@@ -26,35 +29,32 @@ app.get("/api/health", (req: Request, res: Response) => {
 
 /**
  * @route   POST /api/transactions
- * @desc    Create a new financial transaction (Income/Expense)
- * @access  Public (Temporary, pending Auth implementation in Phase 1)
+ * @desc    Create a new transaction bound dynamically to the authenticated session user
+ * @access  Protected (Requires Bearer Token)
  */
-app.post("/api/transactions", async (req: Request, res: Response) => {
+app.post("/api/transactions", authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { type, amount, category, description, userId } = req.body;
+    const { type, amount, category, description } = req.body;
+    
+    // Extract validated user identity securely from middleware injection
+    const userId = req.user?.userId;
 
-    // Basic Validation
-    if (!type || !amount || !category) {
+    if (!type || !amount || !category || !userId) {
       res.status(400).json({ error: "Type, amount, and category fields are required" });
       return;
     }
 
-    // Insert transaction block via Prisma ORM
     const transaction = await prisma.transaction.create({
       data: {
         type,
         amount: parseFloat(amount),
         category,
         description,
-        // Since user registration API is pending, we dynamically ensure a fallback relation or require a valid string identifier
-        userId: userId || "default-mock-user-id" 
+        userId: userId // Securely mapped relationship block
       },
     });
 
-    res.status(201).json({
-      success: true,
-      data: transaction
-    });
+    res.status(201).json({ success: true, data: transaction });
   } catch (error: any) {
     res.status(500).json({ error: error.message || "Internal Server Error during creation" });
   }
@@ -62,15 +62,22 @@ app.post("/api/transactions", async (req: Request, res: Response) => {
 
 /**
  * @route   GET /api/transactions
- * @desc    Retrieve all financial transactions logs from database
- * @access  Public
+ * @desc    Retrieve only the transactions belonging exclusively to the logged-in user
+ * @access  Protected (Requires Bearer Token)
  */
-app.get("/api/transactions", async (req: Request, res: Response) => {
+app.get("/api/transactions", authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized access vector" });
+      return;
+    }
+
+    // Dynamic database lookup querying logs specific to current session scope
     const transactions = await prisma.transaction.findMany({
-      orderBy: {
-        date: "desc" // Order logs starting from newest
-      }
+      where: { userId: userId },
+      orderBy: { date: "desc" }
     });
 
     res.status(200).json({
@@ -85,10 +92,65 @@ app.get("/api/transactions", async (req: Request, res: Response) => {
 
 /**
  * @route   POST /api/users
- * @desc    Create a new user record for testing relational data integrity
+ * @desc    Register a new user with hashed credentials and return session token
  * @access  Public
  */
 app.post("/api/users", async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body;
+
+    // 1. Validation Check
+    if (!email || !password) {
+      res.status(400).json({ error: "Email and password are required fields" });
+      return;
+    }
+
+    // 2. Check if user already exists in Neon PostgreSQL
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      res.status(400).json({ error: "A user with this email identifier already exists" });
+      return;
+    }
+
+    // 3. Hash the plain text password securely using bcrypt
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // 4. Create user record inside database
+    const user = await prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+      },
+    });
+
+    // 5. Generate a secure JSON Web Token (JWT) for the session
+    const token = jwt.sign(
+      { userId: user.id, email: user.email },
+      `${process.env.JWT_SECRET}`,
+      { expiresIn: "7d" } // Token valid for 7 days validation cycle
+    );
+
+    res.status(201).json({
+      success: true,
+      message: "User account established securely",
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || "Internal Server Error during user registration" });
+  }
+});
+
+/**
+ * @route   POST /api/auth/login
+ * @desc    Authenticate user credentials, verify hash, and return JWT session token
+ * @access  Public
+ */
+app.post("/api/auth/login", async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
@@ -97,19 +159,37 @@ app.post("/api/users", async (req: Request, res: Response) => {
       return;
     }
 
-    const user = await prisma.user.create({
-      data: {
-        email,
-        password, // In production, this must be hashed using bcrypt/argon2
-      },
-    });
+    // 1. Fetch user from database
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      res.status(401).json({ error: "Invalid credentials parsed" });
+      return;
+    }
 
-    res.status(201).json({
+    // 2. Compare incoming password with the stored secure hash
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      res.status(401).json({ error: "Invalid credentials parsed" });
+      return;
+    }
+
+    // 3. Generate token upon successful match validation
+    const token = jwt.sign(
+      { userId: user.id, email: user.email },
+      `${process.env.JWT_SECRET}`,
+      { expiresIn: "7d" }
+    );
+
+    res.status(200).json({
       success: true,
-      data: user,
+      token,
+      user: {
+        id: user.id,
+        email: user.email
+      }
     });
   } catch (error: any) {
-    res.status(500).json({ error: error.message || "Internal Server Error during user creation" });
+    res.status(500).json({ error: error.message || "Internal Server Error during authentication" });
   }
 });
 
