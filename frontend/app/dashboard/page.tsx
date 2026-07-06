@@ -146,6 +146,38 @@ export default function Dashboard() {
       return 0;
     });
 
+  // 5. Generate and Trigger Secure CSV Data Export Layer
+  const handleExportCSV = () => {
+    if (filteredTransactions.length === 0) {
+      alert("No matching transaction logs found to export.");
+      return;
+    }
+
+    const headers = ["ID", "Category", "Type", "Amount", "Description", "Date"];
+    
+    const csvRows = filteredTransactions.map((t) => [
+      t.id,
+      `"${t.category.replace(/"/g, '""')}"`,
+      t.type,
+      t.amount.toFixed(2),
+      `"${(t.description || "N/A").replace(/"/g, '""')}"`,
+      new Date(t.date).toLocaleDateString("en-US")
+    ]);
+
+    const csvContent = [headers.join(","), ...csvRows.map((e) => e.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `finpulse_ledger_${new Date().toISOString().split("T")[0]}.csv`);
+    link.style.visibility = "hidden";
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="min-h-screen bg-[#fafafa] text-black p-6 font-sans">
       <Navbar username={userEmail} />
@@ -221,6 +253,16 @@ export default function Dashboard() {
                 <option value="AMOUNT_LOW">AMOUNT: LOW TO HIGH</option>
               </select>
             </div>
+          </div>
+          
+          {/* Action Deck - Neo-Brutalist Export Trigger */}
+          <div className="flex justify-end mb-4">
+            <button
+              onClick={handleExportCSV}
+              className="border-2 border-black bg-zinc-950 text-white px-4 py-2 text-xs font-black uppercase tracking-wider hover:bg-zinc-800 cursor-pointer shadow-[3px_3px_0px_0px_rgba(16,185,129,1)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
+            >
+              Export Current View (CSV)
+            </button>
           </div>
           
           {filteredTransactions.length === 0 ? (
