@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-[#f4f4f5] p-6 text-black selection:bg-black selection:text-white">
@@ -23,9 +25,11 @@ export default function Home() {
         </p>
 
         {/* Interactive Action Button with Rigid Shadow Transitions */}
-        <button className="w-full border-2 border-black bg-black py-4 font-black text-white uppercase tracking-widest transition-all duration-150 hover:-translate-x-1 hover:-translate-y-1 active:translate-x-0 active:translate-y-0 shadow-[4px_4px_0px_0px_rgba(39,39,42,1)] hover:shadow-[8px_8px_0px_0px_rgba(39,39,42,1)] cursor-pointer">
-          Get Started
-        </button>
+        <Link href="/dashboard" className="w-full">
+          <button className="w-full border-2 border-black bg-black py-4 font-black text-white uppercase tracking-widest transition-all duration-150 hover:-translate-x-1 hover:-translate-y-1 active:translate-x-0 active:translate-y-0 hover:shadow-[8px_8px_0px_0px_rgba(39,39,42,1)] cursor-pointer">
+            Get Started
+          </button>
+        </Link>
       </div>
     </div>
   );
