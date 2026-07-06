@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "../components/Navbar";
 import AnalyticsCard from "../components/AnalyticsCard";
 import TransactionForm from "../components/TransactionForm";
+import FinancialChart from "../components/FinancialChart";
 
 interface Transaction {
   id: string;
@@ -20,21 +21,54 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState("User");
   
-  // State layers for client-side filtering and sorting pipelines
   const [filterType, setFilterType] = useState("ALL");
   const [searchCategory, setSearchCategory] = useState("");
   const [sortBy, setSortBy] = useState("NEWEST");
   
   const router = useRouter();
 
+  // 1. Isolated Data Fetching Pipeline for Reusability
+  const fetchTransactions = useCallback(async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    const backendHost = window.location.hostname || "localhost";
+    const targetUrl = `http://${backendHost}:5000/api/transactions`;
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      const res = await fetch(targetUrl, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
+        const jsonWrapper = await res.json();
+        setTransactions(jsonWrapper.data || []);
+      } else {
+        localStorage.clear();
+        router.replace("/login");
+      }
+    } catch (error) {
+      console.error("[dashboard-fetch-error]:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [router]);
+
   useEffect(() => {
-    // Access browser safe boundaries securely
     if (typeof window === "undefined") return;
 
     const token = localStorage.getItem("token");
     const email = localStorage.getItem("userEmail");
 
-    // 1. Safe Route Guard Redirection via Next.js Router
     if (!token) {
       router.replace("/login");
       return;
@@ -44,43 +78,10 @@ export default function Dashboard() {
       setUserEmail(email.split("@")[0]);
     }
 
-    // 2. Fetch User Logs from Active Dynamic Wi-Fi Network Host
-    const fetchTransactions = async () => {
-      const backendHost = window.location.hostname || "localhost";
-      const targetUrl = `http://${backendHost}:5000/api/transactions`;
-
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-        const res = await fetch(targetUrl, {
-          method: "GET",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-          },
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        if (res.ok) {
-          const jsonWrapper = await res.json();
-          setTransactions(jsonWrapper.data || []);
-        } else {
-          localStorage.clear();
-          router.replace("/login");
-        }
-      } catch (error) {
-        console.error("[dashboard-fetch-error]:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchTransactions();
-  }, [router]);
+  }, [router, fetchTransactions]);
 
-  // 3. Destructive Deletion Handlers Bound via Prisma ID Tokens
+  // 2. Destructive Deletion Handlers Bound via Prisma ID Tokens
   const handleDelete = async (id: string) => {
     if (!window.confirm("Are you absolute sure you want to purge this transaction log?")) return;
 
@@ -109,7 +110,6 @@ export default function Dashboard() {
     }
   };
 
-  // 4. Centralized Loading UI Block
   if (loading) {
     return (
       <div className="min-h-screen bg-[#fafafa] flex items-center justify-center font-sans text-black">
@@ -120,7 +120,7 @@ export default function Dashboard() {
     );
   }
 
-  // 5. Global Financial Metric Evaluators (Always calculated from raw state data)
+  // 3. Global Financial Metric Evaluators
   const totalIncome = transactions
     .filter((t) => t.type === "INCOME")
     .reduce((sum, t) => sum + t.amount, 0);
@@ -131,7 +131,7 @@ export default function Dashboard() {
 
   const netBalance = totalIncome - totalExpense;
 
-  // 6. Execution Pipeline for Client-side Filters and Sorting
+  // 4. Client-side Filter and Sort Pipelines
   const filteredTransactions = transactions
     .filter((t) => {
       const matchesType = filterType === "ALL" || t.type === filterType;
@@ -168,10 +168,13 @@ export default function Dashboard() {
         />
       </div>
 
+      {/* Integrated Neo-Brutalist Financial Chart Analytics Section */}
+      <FinancialChart transactions={transactions} />
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Core Control Block */}
         <div className="lg:col-span-1">
-          <TransactionForm />
+          <TransactionForm onTransactionAdded={fetchTransactions} />
         </div>
 
         {/* Data Records Rendering Template */}
@@ -180,10 +183,7 @@ export default function Dashboard() {
             Recent Transactions Logs
           </h3>
           
-          {/* Neo-Brutalist Filter Control Panel */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 border-4 border-black p-4 bg-zinc-50 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-            
-            {/* Type Filtering Component */}
             <div className="flex flex-col gap-1">
               <label className="text-xs font-bold uppercase tracking-wider">Filter Type</label>
               <select
@@ -197,7 +197,6 @@ export default function Dashboard() {
               </select>
             </div>
 
-            {/* Substring Category Search Input */}
             <div className="flex flex-col gap-1">
               <label className="text-xs font-bold uppercase tracking-wider">Search Category</label>
               <input
@@ -209,7 +208,6 @@ export default function Dashboard() {
               />
             </div>
 
-            {/* Chronological and Numeric Sorting Selector */}
             <div className="flex flex-col gap-1">
               <label className="text-xs font-bold uppercase tracking-wider">Sort Orders</label>
               <select
@@ -223,7 +221,6 @@ export default function Dashboard() {
                 <option value="AMOUNT_LOW">AMOUNT: LOW TO HIGH</option>
               </select>
             </div>
-
           </div>
           
           {filteredTransactions.length === 0 ? (
@@ -253,8 +250,6 @@ export default function Dashboard() {
                       <td className={`p-3 border-r-2 border-black font-bold ${t.type === "INCOME" ? "text-emerald-600" : "text-rose-600"}`}>
                         {t.type === "INCOME" ? "+" : "-"}${t.amount.toFixed(2)}
                       </td>
-                      
-                      {/* Actions Cell Integration */}
                       <td className="p-3 text-center">
                         <button
                           onClick={() => handleDelete(t.id)}
