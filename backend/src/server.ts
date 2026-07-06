@@ -13,7 +13,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Enable Cross-Origin Resource Sharing
-app.use(cors());
+app.use(cors({ origin: "*" }));
 
 // Middleware to parse incoming JSON payloads
 app.use(express.json());
@@ -87,6 +87,50 @@ app.get("/api/transactions", authenticateToken, async (req: AuthenticatedRequest
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message || "Internal Server Error during data fetching" });
+  }
+});
+
+/**
+ * @route   DELETE /api/transactions/:id
+ * @desc    Delete a specific transaction securely if it belongs to the authenticated user
+ * @access  Protected (Requires Bearer Token)
+ */
+app.delete("/api/transactions/:id", authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized access vector" });
+      return;
+    }
+
+    // 1. Verify that the transaction exists and belongs exclusively to this user
+    const transaction = await prisma.transaction.findUnique({
+      where: { id },
+    });
+
+    if (!transaction) {
+      res.status(404).json({ error: "Transaction record not found" });
+      return;
+    }
+
+    if (transaction.userId !== userId) {
+      res.status(403).json({ error: "Forbidden. You do not own this financial log." });
+      return;
+    }
+
+    // 2. Perform safe cascade deletion
+    await prisma.transaction.delete({
+      where: { id },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Transaction purged securely from registry",
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || "Internal Server Error during deletion pipeline" });
   }
 });
 

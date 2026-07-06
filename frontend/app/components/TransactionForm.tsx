@@ -20,7 +20,8 @@ export default function TransactionForm() {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5000/api/transactions", {
+      const backendHost = window.location.hostname;
+      const response = await fetch(`http://${backendHost}:5000/api/transactions`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
