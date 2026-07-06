@@ -19,6 +19,12 @@ export default function Dashboard() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState("User");
+  
+  // State layers for client-side filtering and sorting pipelines
+  const [filterType, setFilterType] = useState("ALL");
+  const [searchCategory, setSearchCategory] = useState("");
+  const [sortBy, setSortBy] = useState("NEWEST");
+  
   const router = useRouter();
 
   useEffect(() => {
@@ -74,7 +80,36 @@ export default function Dashboard() {
     fetchTransactions();
   }, [router]);
 
-  // 3. Centralized Loading UI Block
+  // 3. Destructive Deletion Handlers Bound via Prisma ID Tokens
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Are you absolute sure you want to purge this transaction log?")) return;
+
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      const backendHost = window.location.hostname || "localhost";
+      const res = await fetch(`http://${backendHost}:5000/api/transactions/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok) {
+        alert("Transaction removed successfully!");
+        setTransactions((prev) => prev.filter((t) => t.id !== id));
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        alert(errorData.error || "Failed to execute delete action");
+      }
+    } catch (error) {
+      console.error("[delete-error]:", error);
+      alert("Network error. Could not reach execution pool.");
+    }
+  };
+
+  // 4. Centralized Loading UI Block
   if (loading) {
     return (
       <div className="min-h-screen bg-[#fafafa] flex items-center justify-center font-sans text-black">
@@ -85,7 +120,7 @@ export default function Dashboard() {
     );
   }
 
-  // 4. Financial Metric Evaluators
+  // 5. Global Financial Metric Evaluators (Always calculated from raw state data)
   const totalIncome = transactions
     .filter((t) => t.type === "INCOME")
     .reduce((sum, t) => sum + t.amount, 0);
@@ -95,6 +130,21 @@ export default function Dashboard() {
     .reduce((sum, t) => sum + t.amount, 0);
 
   const netBalance = totalIncome - totalExpense;
+
+  // 6. Execution Pipeline for Client-side Filters and Sorting
+  const filteredTransactions = transactions
+    .filter((t) => {
+      const matchesType = filterType === "ALL" || t.type === filterType;
+      const matchesCategory = t.category.toLowerCase().includes(searchCategory.toLowerCase());
+      return matchesType && matchesCategory;
+    })
+    .sort((a, b) => {
+      if (sortBy === "NEWEST") return new Date(b.date).getTime() - new Date(a.date).getTime();
+      if (sortBy === "OLDEST") return new Date(a.date).getTime() - new Date(b.date).getTime();
+      if (sortBy === "AMOUNT_HIGH") return b.amount - a.amount;
+      if (sortBy === "AMOUNT_LOW") return a.amount - b.amount;
+      return 0;
+    });
 
   return (
     <div className="min-h-screen bg-[#fafafa] text-black p-6 font-sans">
@@ -130,9 +180,55 @@ export default function Dashboard() {
             Recent Transactions Logs
           </h3>
           
-          {transactions.length === 0 ? (
+          {/* Neo-Brutalist Filter Control Panel */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 border-4 border-black p-4 bg-zinc-50 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            
+            {/* Type Filtering Component */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-bold uppercase tracking-wider">Filter Type</label>
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+                className="border-2 border-black p-2 font-bold bg-white outline-none cursor-pointer"
+              >
+                <option value="ALL">ALL RECORDS</option>
+                <option value="INCOME">INCOME ONLY</option>
+                <option value="EXPENSE">EXPENSE ONLY</option>
+              </select>
+            </div>
+
+            {/* Substring Category Search Input */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-bold uppercase tracking-wider">Search Category</label>
+              <input
+                type="text"
+                placeholder="e.g., Food, Salary..."
+                value={searchCategory}
+                onChange={(e) => setSearchCategory(e.target.value)}
+                className="border-2 border-black p-2 font-medium bg-white outline-none"
+              />
+            </div>
+
+            {/* Chronological and Numeric Sorting Selector */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-bold uppercase tracking-wider">Sort Orders</label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="border-2 border-black p-2 font-bold bg-white outline-none cursor-pointer"
+              >
+                <option value="NEWEST">NEWEST FIRST</option>
+                <option value="OLDEST">OLDEST FIRST</option>
+                <option value="AMOUNT_HIGH">AMOUNT: HIGH TO LOW</option>
+                <option value="AMOUNT_LOW">AMOUNT: LOW TO HIGH</option>
+              </select>
+            </div>
+
+          </div>
+          
+          {filteredTransactions.length === 0 ? (
             <p className="text-zinc-500 font-medium italic">
-              No secure records bound to this account identity found.
+              No secure records matching filters bound to this account identity found.
             </p>
           ) : (
             <div className="overflow-x-auto">
@@ -142,19 +238,30 @@ export default function Dashboard() {
                     <th className="p-3 border-r-2 border-black">Category</th>
                     <th className="p-3 border-r-2 border-black">Type</th>
                     <th className="p-3 border-r-2 border-black">Description</th>
-                    <th className="p-3">Amount</th>
+                    <th className="p-3 border-r-2 border-black">Amount</th>
+                    <th className="p-3">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y-2 divide-black">
-                  {transactions.map((t) => (
+                  {filteredTransactions.map((t) => (
                     <tr key={t.id} className="font-medium text-sm border-b-2 border-black last:border-b-0">
                       <td className="p-3 border-r-2 border-black font-bold uppercase text-xs">{t.category}</td>
                       <td className={`p-3 border-r-2 border-black font-black text-xs ${t.type === "INCOME" ? "text-emerald-600" : "text-rose-600"}`}>
                         {t.type}
                       </td>
                       <td className="p-3 border-r-2 border-black text-zinc-600">{t.description || "N/A"}</td>
-                      <td className={`p-3 font-bold ${t.type === "INCOME" ? "text-emerald-600" : "text-rose-600"}`}>
+                      <td className={`p-3 border-r-2 border-black font-bold ${t.type === "INCOME" ? "text-emerald-600" : "text-rose-600"}`}>
                         {t.type === "INCOME" ? "+" : "-"}${t.amount.toFixed(2)}
+                      </td>
+                      
+                      {/* Actions Cell Integration */}
+                      <td className="p-3 text-center">
+                        <button
+                          onClick={() => handleDelete(t.id)}
+                          className="border-2 border-black bg-rose-500 text-white px-2 py-0.5 text-xs font-black uppercase hover:bg-rose-600 cursor-pointer shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
+                        >
+                          DEL
+                        </button>
                       </td>
                     </tr>
                   ))}
