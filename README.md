@@ -12,17 +12,14 @@ FinPulse Tracker helps users manage their daily income and expenses with a clean
 
 | Dashboard | Transactions |
 |-----------|--------------|
-| ![Dashboard](./screenshots/dashboard.png) | ![Transactions](./screenshots/transactions.png) |
+| ![Dashboard](./screenshots/login.png) | ![Dashboard](./screenshots/dashboard.png) |
 
 ---
 
 # 🌐 Live Demo
 
 ### Frontend
-👉 https://your-frontend.vercel.app
-
-### Backend API
-👉 https://your-api.vercel.app
+👉 https://finpulse-tracker.vercel.app/
 
 ---
 
