@@ -10,9 +10,9 @@ FinPulse Tracker helps users manage their daily income and expenses with a clean
 
 > Add screenshots or GIFs here.
 
-| Dashboard | Transactions |
+| Dashboard | Login |
 |-----------|--------------|
-| ![Dashboard](./screenshots/login.png) | ![Dashboard](./screenshots/dashboard.png) |
+| ![Login](./screenshots/login.png) | ![Dashboard](./screenshots/dashboard.png) |
 
 ---
 
