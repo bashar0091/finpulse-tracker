@@ -12,7 +12,7 @@ FinPulse Tracker helps users manage their daily income and expenses with a clean
 
 | Dashboard | Login |
 |-----------|--------------|
-| ![Login](./screenshots/login.png) | ![Dashboard](./screenshots/dashboard.png) |
+| ![Dashboard](./screenshots/dashboard.png) | ![Login](./screenshots/login.png) |
 
 ---
 
