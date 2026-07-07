@@ -23,9 +23,31 @@ FinPulse Tracker helps users manage their daily income and expenses with a clean
 
 ---
 
+# 🔑 Demo Login Credentials
+
+Use the following demo account to explore the application.
+
+| Email | Password |
+|--------|----------|
+| `awal.bashar@example.com` | `securepassword123` |
+
+Or copy directly:
+
+```json
+{
+  "email": "awal.bashar@example.com",
+  "password": "securepassword123"
+}
+```
+
+> **Note:** This is a demo account intended for testing purposes only. Please avoid modifying or deleting demo data.
+
+---
+
 # ✨ Features
 
 ### 🔐 Authentication
+
 - JWT Authentication
 - Secure User Registration
 - Secure Login
@@ -33,6 +55,7 @@ FinPulse Tracker helps users manage their daily income and expenses with a clean
 - Protected Routes
 
 ### 💰 Transaction Management
+
 - Add Income
 - Add Expenses
 - View Transaction History
@@ -40,18 +63,21 @@ FinPulse Tracker helps users manage their daily income and expenses with a clean
 - User-specific Data Isolation
 
 ### 📊 Performance
+
 - Optimized Database Queries
 - Fast API Responses
 - Clean REST Architecture
 - Responsive UI
 
 ### 🛡️ Security
+
 - JWT Middleware
 - Password Encryption
 - Environment Variables
 - Protected API Endpoints
 
 ### 📱 User Experience
+
 - Responsive Design
 - Clean Dashboard
 - Modern UI
@@ -95,7 +121,7 @@ FinPulse Tracker helps users manage their daily income and expenses with a clean
 
 # 📁 Project Structure
 
-```
+```text
 FinPulse-Tracker/
 │
 ├── frontend/
@@ -110,9 +136,9 @@ FinPulse-Tracker/
 │   ├── controllers/
 │   ├── middleware/
 │   ├── routes/
-│   ├── models/
 │   ├── config/
-│   └── server.js
+│   ├── server.js
+│   └── ...
 │
 └── README.md
 ```
@@ -126,7 +152,7 @@ FinPulse-Tracker/
 ```bash
 git clone https://github.com/your-username/finpulse-tracker.git
 
-cd finpulse-tracker
+cd FinPulse-Tracker
 ```
 
 ---
@@ -143,13 +169,11 @@ npm install
 
 ## 3. Configure Environment Variables
 
-Create a `.env` file inside the backend directory.
+Create a `.env` file inside the `backend` directory.
 
 ```env
 DATABASE_URL=your_postgresql_connection_string
-
 JWT_SECRET=your_super_secret_key
-
 PORT=5000
 ```
 
@@ -163,7 +187,7 @@ Generate Prisma Client
 npx prisma generate
 ```
 
-Push Schema
+Push Database Schema
 
 ```bash
 npx prisma db push
@@ -195,6 +219,20 @@ npm install
 npm run dev
 ```
 
+The application will be available at:
+
+Frontend:
+
+```
+http://localhost:3000
+```
+
+Backend:
+
+```
+http://localhost:5000
+```
+
 ---
 
 # 🔌 REST API
@@ -202,7 +240,7 @@ npm run dev
 ## Authentication
 
 | Method | Endpoint | Access |
-|----------|-----------------|-----------|
+|--------|----------|--------|
 | POST | `/api/users/register` | Public |
 | POST | `/api/auth/login` | Public |
 
@@ -211,7 +249,7 @@ npm run dev
 ## Transactions
 
 | Method | Endpoint | Access |
-|----------|----------------------|------------|
+|--------|----------|--------|
 | GET | `/api/transactions` | Protected |
 | POST | `/api/transactions` | Protected |
 | DELETE | `/api/transactions/:id` | Protected |
@@ -234,17 +272,12 @@ npm run dev
 
 # 🔒 Security
 
-✔ JWT Authentication
-
-✔ Password Hashing (bcryptjs)
-
-✔ Environment Variables
-
-✔ Protected Routes
-
-✔ User Data Isolation
-
-✔ Secure Database Access
+- ✅ JWT Authentication
+- ✅ Password Hashing (bcryptjs)
+- ✅ Environment Variables
+- ✅ Protected Routes
+- ✅ User Data Isolation
+- ✅ Secure Database Access
 
 ---
 
@@ -274,29 +307,29 @@ npm run dev
 
 # 🤝 Contributing
 
-Contributions are always welcome.
+Contributions are always welcome!
 
-1. Fork the repository
+1. Fork the repository.
 
-2. Create your feature branch
+2. Create a feature branch.
 
 ```bash
 git checkout -b feature/AmazingFeature
 ```
 
-3. Commit your changes
+3. Commit your changes.
 
 ```bash
 git commit -m "Add Amazing Feature"
 ```
 
-4. Push to your branch
+4. Push to your branch.
 
 ```bash
 git push origin feature/AmazingFeature
 ```
 
-5. Open a Pull Request
+5. Open a Pull Request.
 
 ---
 
@@ -304,7 +337,7 @@ git push origin feature/AmazingFeature
 
 If you found this project helpful, please consider giving it a ⭐ on GitHub.
 
-It helps others discover the project and motivates further development.
+It helps others discover the project and motivates future development.
 
 ---
 
