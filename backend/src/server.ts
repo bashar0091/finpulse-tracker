@@ -97,7 +97,8 @@ app.get("/api/transactions", authenticateToken, async (req: AuthenticatedRequest
  */
 app.delete("/api/transactions/:id", authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { id } = req.params;
+    // এখানে id কে explicitly string হিসেবে কাস্ট করে নিলাম
+    const id = req.params.id as string;
     const userId = req.user?.userId;
 
     if (!userId) {
@@ -106,8 +107,9 @@ app.delete("/api/transactions/:id", authenticateToken, async (req: Authenticated
     }
 
     // 1. Verify that the transaction exists and belongs exclusively to this user
+    // FIXED: id: id as string
     const transaction = await prisma.transaction.findUnique({
-      where: { id },
+      where: { id: id },
     });
 
     if (!transaction) {
@@ -121,8 +123,9 @@ app.delete("/api/transactions/:id", authenticateToken, async (req: Authenticated
     }
 
     // 2. Perform safe cascade deletion
+    // FIXED: id: id as string
     await prisma.transaction.delete({
-      where: { id },
+      where: { id: id },
     });
 
     res.status(200).json({
